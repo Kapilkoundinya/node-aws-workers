@@ -1,3 +1,5 @@
+// Manage SSH keys we use to access machines we spin up in AWS
+
 'use strict';
 
 const uuid = require('uuid');
@@ -70,6 +72,7 @@ function loadOrCreateKey(callback) {
 }
 
 module.exports = {
+  listKeys: listKeys,
   loadOrCreateKey: loadOrCreateKey,
   cleanupKeys: cleanupKeys,
 };
