@@ -1,9 +1,11 @@
 'use strict';
 
-const ec2 = require('./ec2');
 const uuid = require('uuid');
+const fs = require('fs');
+const ec2 = require('./ec2');
 
 const PREFIX = 'node-aws-worker-';
+const KEYFILE = __dirname + '/.' + PREFIX + 'keyfile';
 
 // create a new key
 function createKey(callback) {
@@ -13,7 +15,7 @@ function createKey(callback) {
   }, (err, data) => {
     if (err)
       throw err;
-    callback && callback(data.KeyName, data.KeyFingerprint, data.KeyMaterial);
+    callback && callback(data);
   });
 }
 
@@ -24,24 +26,50 @@ function deleteKey(name, callback) {
   }, (err, data) => {
     if (err)
       throw err;
-    console.log('done deleteKey!');
     callback && callback(data);
+  });
+}
+
+// list all keys taht have our PREFIX
+function listKeys(callback) {
+  ec2.describeKeyPairs({}, (err, data) => {
+    if (err)
+      throw err;
+    callback(data.KeyPairs.filter(key => key.KeyName.indexOf(PREFIX) === 0));
   });
 }
 
 // cleanup any keys we created in the past
 function cleanupKeys() {
-  ec2.describeKeyPairs({}, (err, data) => {
-    if (err)
-      throw err;
-    data.KeyPairs.filter(key => key.KeyName.indexOf(PREFIX) === 0).forEach(key => {
-      deleteKey(key.KeyName);
+  listKeys(keys => keys.forEach(key => {
+    console.log('delete leftover key ' + key.KeyName);
+    deleteKey(key.KeyName);
+  }));
+}
+
+// if we don't have a keyfile, create a new key
+function loadOrCreateKey(callback) {
+  try {
+    let storedKey = JSON.parse(fs.readFileSync(KEYFILE));
+    listKeys(keys => {
+      if (!keys.some(key => key.KeyName === storedKey.KeyName)) {
+        console.log('SSH key ' + storedKey.KeyName + ' vanished, recreating a new key');
+        fs.unlinkSync(KEYFILE);
+        loadOrCreateKey(callback);
+        return;
+      }
+      callback(storedKey);
     });
-  });
+  } catch (e) {
+    createKey(data => {
+      console.log('created new SSH key ' + data.KeyName + ', storing in ' + KEYFILE);
+      fs.writeFileSync(KEYFILE, JSON.stringify(data), { flags: 'w+' });
+      loadOrCreateKey(callback);
+    });
+  }
 }
 
 module.exports = {
-  createKey: createKey,
-  deleteKey: deleteKey,
+  loadOrCreateKey: loadOrCreateKey,
   cleanupKeys: cleanupKeys,
 };
