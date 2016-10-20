@@ -2,7 +2,7 @@
 
 const uuid = require('uuid');
 const fs = require('fs');
-const ec2 = require('./ec2');
+const ec2 = require('./aws').ec2;
 const keys = require('./keys');
 
 // list all instances that were launched by our current key

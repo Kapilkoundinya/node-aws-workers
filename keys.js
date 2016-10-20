@@ -4,9 +4,11 @@
 
 const uuid = require('uuid');
 const fs = require('fs');
-const ec2 = require('./ec2');
+const ec2 = require('./aws').ec2;
 
-const PREFIX = 'node-aws-worker-';
+// The prefix we use for resources to make sure we don't delete something we don't own
+const PREFIX = require('./aws').PREFIX;
+
 const KEYFILE = __dirname + '/.' + PREFIX + 'keyfile';
 
 // create a new key
