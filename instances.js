@@ -10,25 +10,35 @@ const SSHClient = require('ssh2').Client;
 function listInstances(callback) {
   keys.loadOrCreateKey(storedKey => {
     ec2.describeInstances({}, (err, data) => {
-      if (err)
-        throw err;
+      if (err) {
+        callback && callback(err);
+        return;
+      }
       let instances = Array.prototype.concat.apply([], data.Reservations.map(reservation => reservation.Instances));
-      callback && callback(instances.filter(instance => instance.KeyName === storedKey.KeyName && instance.State.Name !== 'terminated'));
+      callback && callback(null, instances.filter(instance => instance.KeyName === storedKey.KeyName && instance.State.Name !== 'terminated'));
     });
   });
 }
 
 // kill all instances running with our key
-function cleanupInstances() {
-  listInstances(instances => {
-    if (!instances.length)
+function cleanupInstances(callback) {
+  listInstances((err, instances) => {
+    if (err) {
+      callback && callback(err);
       return;
+    }
+    if (!instances.length) {
+      callback && callback(null);
+      return;
+    }
     ec2.terminateInstances({
       InstanceIds: instances.map(instance => instance.InstanceId),
     }, (err, data) => {
-      if (err)
-        throw err;
-      console.log(JSON.stringify(data));
+      if (err) {
+        callback && callback(err);
+        return;
+      }
+      callback && callback(null, data);
     });
   });
 }
@@ -42,11 +52,7 @@ function startInstances(script, callback) {
       MinCount: 1,
       MaxCount: 1,
       UserData: (new Buffer(script)).toString('base64'),
-    }, (err, data) => {
-      if (err)
-        throw err;
-      callback && callback(data);
-    });
+    }, callback);
   });
 }
 
@@ -59,11 +65,13 @@ function runAll(cmd, callback) {
         let stderr = '';
         conn.on('ready', () => {
           conn.exec(cmd, (err, stream) => {
-            if (err)
-              throw err;
+            if (err) {
+              callback && callback(err);
+              return;
+            }
             stream.on('close', function(code, signal) {
               conn.end();
-              callback(stdout, stderr);
+              callback && callback(null, stdout, stderr);
             }).on('data', function(data) {
               stdout += data.toString('ascii');
             }).stderr.on('data', function(data) {
@@ -80,8 +88,17 @@ function runAll(cmd, callback) {
   });
 }
 
+module.exports = {
+  listInstances: listInstances,
+  startInstances: startInstances,
+  cleanupInstances: cleanupInstances,
+  runAll: runAll,
+};
+
+//listInstances((err, data) => console.log(data));
+
 //let script = fs.readFileSync('boot.sh', 'utf8');
 //startInstances(script, data => console.log(data));
 //cleanupInstances();
 
-runAll('sudo cat /var/log/cloud-init-output.log', (stdout, stderr) => console.log(stdout, stderr));
+//runAll('sudo cat /var/log/cloud-init-output.log', (stdout, stderr) => console.log(stdout, stderr));
