@@ -9,4 +9,3 @@ module.exports = {
   s3: new AWS.S3(),
   PREFIX: 'node-aws-worker-',
 };
-

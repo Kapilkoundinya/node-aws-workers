@@ -16,57 +16,63 @@ function createKey(callback) {
   let keyName = PREFIX + uuid();
   ec2.createKeyPair({
     KeyName: keyName,
-  }, (err, data) => {
-    if (err)
-      throw err;
-    callback && callback(data);
-  });
+  }, callback);
 }
 
 // delete a specific key
 function deleteKey(name, callback) {
   ec2.deleteKeyPair({
     KeyName: name,
-  }, (err, data) => {
-    if (err)
-      throw err;
-    callback && callback(data);
-  });
+  }, callback);
 }
 
 // list all keys taht have our PREFIX
 function listKeys(callback) {
   ec2.describeKeyPairs({}, (err, data) => {
-    if (err)
-      throw err;
-    callback(data.KeyPairs.filter(key => key.KeyName.indexOf(PREFIX) === 0));
+    if (err) {
+      callback && callback(err);
+      return;
+    }
+    callback && callback(null, data.KeyPairs.filter(key => key.KeyName.indexOf(PREFIX) === 0));
   });
 }
 
 // cleanup any keys we created in the past
-function cleanupKeys() {
-  listKeys(keys => keys.forEach(key => {
-    console.log('delete leftover key ' + key.KeyName);
-    deleteKey(key.KeyName);
-  }));
+function cleanupKeys(callback) {
+  listKeys((err, keys) => {
+    if (err) {
+      callback && callback(err);
+      return;
+    }
+    keys.forEach(key => {
+      deleteKey(key.KeyName);
+    });
+    callback && callback(null);
+  });
 }
 
 // if we don't have a keyfile, create a new key
 function loadOrCreateKey(callback) {
   try {
     let storedKey = JSON.parse(fs.readFileSync(KEYFILE));
-    listKeys(keys => {
+    listKeys((err, keys) => {
+      if (err) {
+        callback && callback(err);
+        return;
+      }
       if (!keys.some(key => key.KeyName === storedKey.KeyName)) {
-        console.log('SSH key ' + storedKey.KeyName + ' vanished, recreating a new key');
         fs.unlinkSync(KEYFILE);
         loadOrCreateKey(callback);
         return;
       }
-      callback(storedKey);
+      callback && callback(null, storedKey);
     });
   } catch (e) {
-    createKey(data => {
-      console.log('created new SSH key ' + data.KeyName + ', storing in ' + KEYFILE);
+    createKey((err, data) => {
+      if (err) {
+        callback && callback(err);
+        return;
+      }
       fs.writeFileSync(KEYFILE, JSON.stringify(data), { flags: 'w+' });
       loadOrCreateKey(callback);
     });

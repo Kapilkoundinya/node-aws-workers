@@ -8,7 +8,11 @@ const SSHClient = require('ssh2').Client;
 
 // list all instances that were launched by our current key
 function listInstances(callback) {
-  keys.loadOrCreateKey(storedKey => {
+  keys.loadOrCreateKey((err, storedKey) => {
+    if (err) {
+      callback && callback(err);
+      return;
+    }
     ec2.describeInstances({}, (err, data) => {
       if (err) {
         callback && callback(err);
