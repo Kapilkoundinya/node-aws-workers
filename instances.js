@@ -47,22 +47,34 @@ function cleanupInstances(callback) {
   });
 }
 
-function startInstances(script, callback) {
-  keys.loadOrCreateKey(storedKey => {
+function startInstances(max, script, callback) {
+  keys.loadOrCreateKey((err, storedKey) => {
+    if (err) {
+      callback && callback(err);
+      return;
+    }
     ec2.runInstances({
       ImageId: 'ami-746aba14',
       InstanceType: 't2.micro',
       KeyName: storedKey.KeyName,
       MinCount: 1,
-      MaxCount: 1,
+      MaxCount: max | 0,
       UserData: (new Buffer(script)).toString('base64'),
     }, callback);
   });
 }
 
-function runAll(cmd, callback) {
-  listInstances(instances => {
-    keys.loadOrCreateKey(key => {
+function shell(cmd, callback) {
+  listInstances((err, instances) => {
+    if (err) {
+      callback && callback(err);
+      return;
+    }
+    keys.loadOrCreateKey((err, key) => {
+      if (err) {
+        callback && callback(err);
+        return;
+      }
       instances.forEach(instance => {
         let conn = new SSHClient();
         let stdout = '';
@@ -75,7 +87,7 @@ function runAll(cmd, callback) {
             }
             stream.on('close', function(code, signal) {
               conn.end();
-              callback && callback(null, stdout, stderr);
+              callback && callback(null, stdout + stderr);
             }).on('data', function(data) {
               stdout += data.toString('ascii');
             }).stderr.on('data', function(data) {
@@ -96,13 +108,5 @@ module.exports = {
   listInstances: listInstances,
   startInstances: startInstances,
   cleanupInstances: cleanupInstances,
-  runAll: runAll,
+  shell: shell,
 };
-
-//listInstances((err, data) => console.log(data));
-
-//let script = fs.readFileSync('boot.sh', 'utf8');
-//startInstances(script, data => console.log(data));
-//cleanupInstances();
-
-//runAll('sudo cat /var/log/cloud-init-output.log', (stdout, stderr) => console.log(stdout, stderr));
