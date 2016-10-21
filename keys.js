@@ -49,6 +49,9 @@ function cleanupKeys(callback) {
     });
     callback && callback(null);
   });
+  try {
+    fs.unlinkSync(KEYFILE);
+  } catch (e) { }
 }
 
 // if we don't have a keyfile, create a new key

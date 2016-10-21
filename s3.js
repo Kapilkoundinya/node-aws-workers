@@ -1,6 +1,5 @@
 'use strict';
 
-const uuid = require('uuid');
 const s3 = require('./aws').s3;
 
 // The prefix we use for resources to make sure we don't delete something we don't own
@@ -9,30 +8,24 @@ const PREFIX = require('./aws').PREFIX;
 // list buckets
 function listBuckets(callback) {
   s3.listBuckets({}, (err, data) => {
-    if (err)
-      throw err;
-    callback && callback(data.Buckets.filter(bucket => bucket.Name.indexOf(PREFIX) === 0));
+    if (err) {
+      callback && callback(err);
+      return;
+    }
+    callback && callback(null, data.Buckets.filter(bucket => bucket.Name.indexOf(PREFIX) === 0));
   });
 }
 
 function createBucket(name, callback) {
   s3.createBucket({
     Bucket: PREFIX + name,
-  }, (err, data) => {
-    if (err)
-      throw err;
-    callback && callback(data);
-  });
+  }, callback);
 }
 
 function deleteBucket(name, callback) {
   s3.deleteBucket({
     Bucket: PREFIX + name,
-  }, (err, data) => {
-    if (err)
-      throw err;
-    callback && callback(data);
-  });
+  }, callback);
 }
 
 function exitsBucket(name, callback) {
@@ -47,7 +40,7 @@ function exitsBucket(name, callback) {
 function ensureBucket(name, callback) {
   exitsBucket(name, exits => {
     if (exits) {
-      callback && callback();
+      callback && callback(null);
       return;
     }
     createBucket(name, callback);
@@ -61,13 +54,17 @@ function upload(bucket, key, data, callback) {
     Key: key,
     Body: data,
   }, function (err, data) {
-    if (err)
-      throw err;
-    callback && callback(data);
+    if (err) {
+      callback && callback(err);
+      return;
+    }
+    callback && callback(null, data);
   });
 }
 
 module.exports = {
+  listBuckets: listBuckets,
   ensureBucket: ensureBucket,
+  deleteBucket: deleteBucket,
   upload: upload,
 };
