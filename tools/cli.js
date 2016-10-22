@@ -53,9 +53,9 @@ function main(args) {
   if (cmd === 'ensureBucket' || cmd === 'deleteBucket' || cmd === 'shell') {
     obj[cmd](args[1], output());
   } else if (cmd === 'upload') {
-    obj[cmd](args[1], args[2], fs.readFileSync(args[3], 'utf8'), output());
+    obj[cmd](args[1], args[2], fs.createReadStream(args[3]), output());
   } else if (cmd === 'startInstances') {
-    obj[cmd](args[1], fs.readFileSync(args[2], 'utf8'), output());
+    obj[cmd](args[1], args[2], output());
   } else {
     obj[cmd](output());
   }
