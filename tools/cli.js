@@ -5,9 +5,9 @@
 const fs = require('fs');
 const prettyjson = require('prettyjson');
 
-const keys = require('../keys');
-const instances = require('../instances');
-const s3 = require('../s3');
+const keys = require('../lib/keys');
+const instances = require('../lib/instances');
+const s3 = require('../lib/s3');
 
 function output() {
   return (err, data) => {
