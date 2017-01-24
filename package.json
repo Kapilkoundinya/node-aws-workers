@@ -1,6 +1,10 @@
 {
   "dependencies": {
+    "argparse": "^1.0.9",
     "aws-sdk": "^2.5.5",
+    "lodash.merge": "^4.6.0",
+    "moment": "^2.17.1",
+    "mz": "^2.5.0",
     "prettyjson": "^1.1.3",
     "ssh2": "^0.5.2",
     "uuid": "^2.0.2"
