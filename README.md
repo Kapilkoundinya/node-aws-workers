@@ -54,7 +54,7 @@ To print log of running instance:
 node tools/cli.js log
 ```
 
-To show log of finished instance:s
+To show log of finished instances:
 ```
 node tools/cli.js show-logs
 ```
