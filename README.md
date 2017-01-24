@@ -1,5 +1,8 @@
 # node-aws-workers
 
+Tool to spawn EC2 instances that runs a specific user script.
+Handles logging and key management.
+
 # Configuration
 
 This tool requires AWS and GitHub credentials, which can configured
@@ -32,4 +35,29 @@ follows:
   (e.g. `git config --get user.email`)
 
 * Assumes GH ssh keys are located in `~/.ssh/id_rsa`.
+```
+
+# Examples
+
+To get help:
+```
+node tools/cli.js -h
+```
+
+To spawn a single instance:
+```
+node tools/cli.js start-instances 1 <name of script to run>
+```
+
+To print log of running instance:
+```
+node tools/cli.js log
+```
+
+To show log of finished instance:s
+```
+node tools/cli.js show-logs
+```
+
+
 
