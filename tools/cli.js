@@ -1,3 +1,11 @@
+/**
+ * Copyright (c) 2017 Silk Labs, Inc.
+ * All Rights Reserved.
+ * Confidential and Proprietary - Silk Labs, Inc.
+ *
+ * @noflow
+ */
+
 // Manage SSH keys we use to access machines we spin up in AWS
 
 'use strict';

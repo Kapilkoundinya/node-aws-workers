@@ -1,3 +1,13 @@
+/**
+ * Copyright (c) 2017 Silk Labs, Inc.
+ * All Rights Reserved.
+ * Confidential and Proprietary - Silk Labs, Inc.
+ *
+ * @noflow
+ */
+
+'use strict'
+
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
