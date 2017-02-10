@@ -1,4 +1,9 @@
 {
+  "name": "node-aws-worker",
+  "license": "proprietary",
+  "private": "true",
+  "version": "1.0.0",
+  "description": "Repository for automated online (instance management) training of dnn models",
   "dependencies": {
     "argparse": "^1.0.9",
     "aws-sdk": "^2.5.5",
