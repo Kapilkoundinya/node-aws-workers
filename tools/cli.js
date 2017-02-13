@@ -32,16 +32,6 @@ function prettyprint(data) {
   console.log(prettyjson.render(data, {}));
 }
 
-function output() {
-  return (err, data) => {
-    if (err) {
-      console.error(err);
-      return;
-    }
-    prettyprint(data);
-  };
-}
-
 let subcommands = {};
 
 let parser = new ArgumentParser({
@@ -49,10 +39,10 @@ let parser = new ArgumentParser({
   description: 'Tool to interact with AWS',
 });
 
-let sub = parser.addSubparsers({ title: 'Commands', dest: 'subcommand' });
+let sub = parser.addSubparsers({title: 'Commands', dest: 'subcommand'});
 
 function addSubcommand(subcommandName, help, args, main) {
-  subcommands[subcommandName] = { main };
+  subcommands[subcommandName] = {main};
   let subcommandParser = sub.addParser(subcommandName, {
     addHelp: help ? true : false,
     help: help,
@@ -78,28 +68,28 @@ function getInstance(instances, instanceName) {
   if (instanceName) {
     if (!isNaN(instanceName)) {
       if (instanceName >= instances.length) {
-        throw `Instance index '${instanceName}' does not exist`;
+        throw (new Error(`Instance index '${instanceName}' does not exist`));
       }
       return instances[instanceName];
     }
     let some =
         instances.filter(instance => instance.InstanceId === instanceName);
     if (!some.length) {
-      throw `InstanceId '${instanceName}' not found`;
+      throw (new Error(`InstanceId '${instanceName}' not found`));
     }
     return some[0];
   } else {
     if (instances.length === 0) {
-      throw 'No instances';
+      throw (new Error('No instances'));
     }
     if (instances.length > 1) {
-      throw 'Too many instances, use -i to disambiguate';
+      throw (new Error('Too many instances, use -i to disambiguate'));
     }
     return instances[0];
   }
 }
 
-// run shell command
+// Run shell command
 function runShellCmd(instance, cmd) {
   return ec2Instances.shell(instance, cmd)
     .then(stream => {
@@ -139,8 +129,8 @@ addSubcommand(
   'start-instances',
   'Start N instances using a specific script',
   [
-    [['numInstances'], { help: 'number of instances to start' }],
-    [['script'], { help: 'use this script when starting instances' }],
+    [['numInstances'], {help: 'number of instances to start'}],
+    [['script'], {help: 'use this script when starting instances'}],
     [['-t'], {
       help: `Specify instance type: cpu (m4.large; default), gpu (p2.xlarge), gpu8x (p2.8xlarge), gpu16x: (p2.16xlarge)`,
       type: 'string',
@@ -159,7 +149,7 @@ addSubcommand(
           process.exit(-1);
         }
         buf = Buffer.concat([buf.slice(0, index), data,
-            buf.slice(index)]);
+          buf.slice(index)]);
 
         // Insert keys ...
         let keyStr = `AWS_ACCESS_KEY_ID=${config.aws.accessKeyId}\n`;
@@ -241,7 +231,7 @@ addSubcommand(
   'shell',
   'Run shell command on single/all instances that was created using current private keys',
   [
-    [['cmd'], { help: 'command to execute' }],
+    [['cmd'], {help: 'command to execute'}],
     [['-i'], {
       help: `Specify instance by instance id or instance index from list-instances`,
       dest: 'instanceName',
@@ -264,8 +254,12 @@ addSubcommand(
                 let output = '';
                 return new Promise(resolve => {
                   stream.on('close', () => resolve(output));
-                  stream.on('stdout', data => output += data);
-                  stream.on('stderr', data => output += data);
+                  stream.on('stdout', (data) => {
+                    output += data;
+                  });
+                  stream.on('stderr', (data) => {
+                    output += data;
+                  });
                 });
               });
             promises.push(promise);
@@ -302,7 +296,7 @@ addSubcommand(
       .then(instances => getInstance(instances, args.instanceName))
       .then(instance => runShellCmd(instance, cmd))
       .catch(err => {
-        console.error(err)
+        console.error(err);
         console.error('Instance may have finished. Check S3 logs at https://console.aws.amazon.com/s3/home?region=us-west-2#&bucket=node-aws-worker-logs');
       });
   }
@@ -320,12 +314,12 @@ addSubcommand(
   args => {
     return s3.listObjects(LOGS_BUCKET)
       .then(objects => {
-        objects = objects.sort((a,b) => a.LastModified < b.LastModified);
+        objects = objects.sort((a, b) => a.LastModified < b.LastModified);
         let showLog = key => {
           s3.getObject(LOGS_BUCKET, key)
             .then(data => console.log(data.toString()))
             .catch(err => console.error(err));
-        }
+        };
 
         if (args.logIndex !== null) {
           if (!isNaN(args.logIndex) && args.logIndex >= 0 &&
@@ -346,7 +340,7 @@ addSubcommand(
           });
 
           const rl = readline.createInterface(
-              { input: process.stdin, output: process.stdout }
+              {input: process.stdin, output: process.stdout}
           );
           rl.question('Select log: ', logIndex => {
             showLog(objects[logIndex].Key);
@@ -396,7 +390,7 @@ addSubcommand(
   'ensure-bucket',
   'Make sure a bucket with specified name exists (a prefix will be added)',
   [
-    [['bucket'], { help: 'Bucket name (a prefix will be added)' }],
+    [['bucket'], {help: 'Bucket name (a prefix will be added)'}],
   ],
   defaultCmd(args => s3.ensureBucket(args.bucket))
 );
@@ -405,7 +399,7 @@ addSubcommand(
   'delete-bucket',
   'Delete specific bucket (only works if it was created by this module)',
   [
-    [['bucket'], { help: 'Bucket to delete' }],
+    [['bucket'], {help: 'Bucket to delete'}],
   ],
   defaultCmd(args => s3.deleteBucket(args.bucket))
 );
@@ -414,16 +408,16 @@ addSubcommand(
   'upload',
   'Upload file into a bucket',
   [
-    [['bucket'], { help: 'Bucket to upload to' }],
-    [['key'], { help: 'Keyname of uploaded content' }],
-    [['file'], { help: 'File to upload' }],
+    [['bucket'], {help: 'Bucket to upload to'}],
+    [['key'], {help: 'Keyname of uploaded content'}],
+    [['file'], {help: 'File to upload'}],
   ],
   defaultCmd(args => s3.upload(args.bucket, args.key,
       fs.createReadStream(args.file)))
 );
 
 // Parse args and execute command
-var args = parser.parseArgs();
+let args = parser.parseArgs();
 if (args.subcommand) {
   subcommands[args.subcommand].main(args);
 }

@@ -6,17 +6,17 @@
  * @noflow
  */
 
-'use strict'
+'use strict';
 
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const execSync = require('child_process').execSync
+const execSync = require('child_process').execSync;
 
 const sshKeyPath = path.resolve(os.homedir(), '.ssh', 'id_rsa');
 
 function getGitEmail() {
-  let stdout = execSync('git config --get user.email', { encoding: 'utf8' });
+  let stdout = execSync('git config --get user.email', {encoding: 'utf8'});
   if (!stdout) {
     return undefined;
   }
